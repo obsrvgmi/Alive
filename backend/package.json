@@ -1,0 +1,29 @@
+{
+  "name": "alive-backend",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts",
+    "test": "bun test",
+    "db:migrate": "bun run src/db/migrate.ts",
+    "db:seed": "bun run src/db/seed.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.88.0",
+    "@hono/zod-validator": "^0.2.0",
+    "drizzle-orm": "^0.32.0",
+    "hono": "^4.4.0",
+    "openai": "^4.52.0",
+    "postgres": "^3.4.4",
+    "redis": "^4.6.14",
+    "siwe": "^2.3.0",
+    "twitter-api-v2": "^1.29.0",
+    "viem": "^2.19.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "drizzle-kit": "^0.23.0"
+  }
+}

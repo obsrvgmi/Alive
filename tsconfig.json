@@ -8,6 +8,9 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
+    "paths": {
+      "@/*": ["./*"]
+    },
     "noEmit": true,
     "incremental": true,
     "module": "esnext",

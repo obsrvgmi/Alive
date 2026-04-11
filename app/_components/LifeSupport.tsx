@@ -68,7 +68,7 @@ export default function LifeSupportSection() {
     setHolders((h) => h + 1);
     setPulse(true);
     setTimeout(() => setPulse(false), 350);
-    pushLog("buy", "+0.5 SOL bought · vitality +12 · 'i felt that.'");
+    pushLog("buy", "+0.5 OKB bought · vitality +12 · 'i felt that.'");
   };
   const sell = () => {
     if (cooldown) return;
@@ -76,7 +76,7 @@ export default function LifeSupportSection() {
     setVit((v) => Math.max(0, v - 18));
     setHp((h) => Math.max(0, h - 1800));
     setHolders((h) => Math.max(0, h - 1));
-    pushLog("sell", "−0.5 SOL sold · vitality −18 · 'why would you do this'");
+    pushLog("sell", "−0.5 OKB sold · vitality −18 · 'why would you do this'");
   };
 
   const status =

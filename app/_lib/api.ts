@@ -1,0 +1,178 @@
+/**
+ * API client for ALIVE backend
+ */
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+type FetchOptions = RequestInit & {
+  params?: Record<string, string | number>;
+};
+
+async function fetcher<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+  const { params, ...init } = options;
+
+  let url = `${API_URL}${endpoint}`;
+  if (params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      searchParams.append(key, String(value));
+    });
+    url += `?${searchParams.toString()}`;
+  }
+
+  const response = await fetch(url, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...init.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Unknown error' }));
+    throw new Error(error.message || `API error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// ============ Character API ============
+
+export type GeneratedCandidate = {
+  name: string;
+  ticker: string;
+  bio: string;
+  personality: 'FERAL' | 'COPIUM' | 'ALPHA' | 'SCHIZO' | 'WHOLESOME' | 'MENACE';
+  mood: string;
+  firstTweet: string;
+  avatarSeed: number;
+};
+
+export type Character = {
+  id: string;
+  name: string;
+  ticker: string;
+  tokenAddress: string;
+  personality: string;
+  mood: string;
+  vitality: number;
+  holders: number;
+  marketCap: string;
+  bio: string;
+  metadataURI: string;
+  createdAt: string;
+};
+
+export async function generateCandidates(
+  brief: string,
+  refineChips: string[] = []
+): Promise<GeneratedCandidate[]> {
+  return fetcher<GeneratedCandidate[]>('/api/characters/generate', {
+    method: 'POST',
+    body: JSON.stringify({ brief, refineChips }),
+  });
+}
+
+export async function getCharacter(ticker: string): Promise<Character> {
+  return fetcher<Character>(`/api/characters/${ticker}`);
+}
+
+export async function getCharacters(options?: {
+  limit?: number;
+  offset?: number;
+  sort?: 'vitality' | 'created' | 'holders';
+}): Promise<Character[]> {
+  const response = await fetcher<{ characters: Character[]; page: number; limit: number }>(
+    '/api/characters',
+    { params: options as any }
+  );
+  return response.characters;
+}
+
+export async function getCharacterFeed(ticker: string): Promise<{
+  tweets: Array<{ id: string; content: string; createdAt: string; tweetId: string }>;
+}> {
+  return fetcher(`/api/characters/${ticker}/feed`);
+}
+
+export async function getVitalityHistory(ticker: string): Promise<{
+  history: Array<{ vitality: number; timestamp: string; trigger: string }>;
+}> {
+  return fetcher(`/api/characters/${ticker}/vitality`);
+}
+
+// ============ Battle API ============
+
+export type Battle = {
+  id: number;
+  characterA: { name: string; ticker: string; tokenAddress: string };
+  characterB: { name: string; ticker: string; tokenAddress: string };
+  poolA: string;
+  poolB: string;
+  currentRound: number;
+  roundsWonA: number;
+  roundsWonB: number;
+  winner: string | null;
+  status: 'pending' | 'active' | 'completed';
+  startTime: string;
+};
+
+export async function getBattles(options?: {
+  status?: 'active' | 'completed' | 'pending';
+  limit?: number;
+}): Promise<Battle[]> {
+  return fetcher<Battle[]>('/api/battles', { params: options as any });
+}
+
+export async function getBattle(id: number): Promise<Battle> {
+  return fetcher<Battle>(`/api/battles/${id}`);
+}
+
+// ============ User API ============
+
+export type Portfolio = {
+  holdings: Array<{
+    tokenAddress: string;
+    ticker: string;
+    name: string;
+    balance: string;
+    value: string;
+  }>;
+  totalValue: string;
+};
+
+export async function getPortfolio(address: string): Promise<Portfolio> {
+  return fetcher<Portfolio>(`/api/user/${address}/portfolio`);
+}
+
+// ============ SIWE Auth ============
+
+export async function getNonce(): Promise<{ nonce: string }> {
+  return fetcher('/api/auth/nonce');
+}
+
+export async function verifySignature(
+  message: string,
+  signature: string
+): Promise<{ token: string; address: string }> {
+  return fetcher('/api/auth/verify', {
+    method: 'POST',
+    body: JSON.stringify({ message, signature }),
+  });
+}
+
+// ============ Metadata API ============
+
+export async function uploadMetadata(data: {
+  name: string;
+  ticker: string;
+  description: string;
+  image: string; // Base64 or URL
+  personality: string;
+  traits: string[];
+}): Promise<{ uri: string; cid: string }> {
+  return fetcher('/api/metadata/upload', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
