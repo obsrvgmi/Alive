@@ -5,7 +5,14 @@
       "Bash(npm run:*)",
       "Bash(taskkill //F //IM node.exe)",
       "Bash(npx next:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "Bash(git filter-branch:*)"
     ]
   }
 }
