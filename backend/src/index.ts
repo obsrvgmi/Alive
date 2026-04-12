@@ -1,4 +1,3 @@
-import http from "http";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -73,46 +72,20 @@ const port = parseInt(process.env.PORT || "3001");
 console.log(`🧬 ALIVE API starting on port ${port}`);
 console.log(`Environment: NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}`);
 
-try {
-  // Use native Node.js http server directly for better Railway compatibility
-  const server = http.createServer(async (req, res) => {
-    console.log(`📥 Request: ${req.method} ${req.url}`);
+console.log(`Starting server on port ${port}...`);
 
-    // Convert Node request to Fetch API Request
-    const url = new URL(req.url || "/", `http://${req.headers.host}`);
-    const headers = new Headers();
-    for (const [key, value] of Object.entries(req.headers)) {
-      if (value) headers.set(key, Array.isArray(value) ? value[0] : value);
-    }
+serve(
+  {
+    fetch: app.fetch,
+    port,
+    hostname: "0.0.0.0",
+  },
+  (info) => {
+    console.log(`✅ Server running at http://0.0.0.0:${info.port}`);
+  }
+);
 
-    const fetchRequest = new Request(url.toString(), {
-      method: req.method,
-      headers,
-      body: req.method !== "GET" && req.method !== "HEAD" ? req : undefined,
-    });
-
-    try {
-      const response = await app.fetch(fetchRequest);
-      res.statusCode = response.status;
-      response.headers.forEach((value, key) => res.setHeader(key, value));
-      const body = await response.text();
-      res.end(body);
-    } catch (err) {
-      console.error("Request error:", err);
-      res.statusCode = 500;
-      res.end(JSON.stringify({ error: "Internal Server Error" }));
-    }
-  });
-
-  server.listen(port, "0.0.0.0", () => {
-    console.log(`✅ Server running at http://0.0.0.0:${port}`);
-  });
-
-  // Keep the process alive and log heartbeat
-  setInterval(() => {
-    console.log(`💓 Heartbeat - server still running on port ${port}`);
-  }, 30000);
-} catch (error) {
-  console.error("❌ Failed to start server:", error);
-  process.exit(1);
-}
+// Keep process alive
+setInterval(() => {
+  console.log(`💓 Heartbeat - port ${port}`);
+}, 30000);
