@@ -19,7 +19,12 @@ app.use("*", prettyJSON());
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000", "https://alive.xyz"],
+    origin: [
+      "http://localhost:3000",
+      "https://alive.xyz",
+      "https://assisted-production.up.railway.app",
+      /\.railway\.app$/,
+    ],
     credentials: true,
   })
 );
