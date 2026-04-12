@@ -72,5 +72,6 @@ console.log(`🧬 ALIVE API starting on port ${port}`);
 
 export default {
   port,
+  hostname: "0.0.0.0", // Required for Railway to route traffic
   fetch: app.fetch,
 };
