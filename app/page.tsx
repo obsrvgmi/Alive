@@ -1,3 +1,5 @@
+"use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Nav from "./_components/Nav";
 import Footer from "./_components/Footer";
@@ -5,9 +7,83 @@ import LifeSupportSection from "./_components/LifeSupport";
 import CharacterCard from "./_components/CharacterCard";
 import Ticker from "./_components/Ticker";
 import HeroCard from "./_components/HeroCard";
-import { characters } from "./_lib/characters";
+import { getCharacters, type Character as APICharacter } from "./_lib/api";
+import { characters as mockCharacters, type Character } from "./_lib/characters";
+
+// Convert API character to display format
+function toDisplayCharacter(c: APICharacter): Character {
+  const vit = Math.round(c.vitality / 100);
+  return {
+    name: c.name,
+    ticker: c.ticker,
+    age: getAge(c.createdAt),
+    vit,
+    crit: vit < 15,
+    q: `"${c.bio?.slice(0, 60) || 'no bio yet'}..."`,
+    chips: [],
+    ava: getAvatarGradient(c.ticker),
+    emoji: getEmoji(c.personality),
+    hp: c.vitality,
+    holders: c.holders || 0,
+    mood: c.mood || c.personality,
+    mc: parseFloat(c.marketCap || "0"),
+    bio: c.bio || "",
+    handle: `@${c.ticker.toLowerCase()}_alive`,
+  };
+}
+
+function getAge(createdAt: string): string {
+  const diff = Date.now() - new Date(createdAt).getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  if (days > 0) return `${days}d ${hours.toString().padStart(2, '0')}h`;
+  return `${hours}h`;
+}
+
+function getAvatarGradient(ticker: string): string {
+  const palettes = [
+    ["#c6ff3d", "#ff3da8", "#0a0a0a"],
+    ["#ffe14a", "#0a0a0a", "#ff4127"],
+    ["#3d6bff", "#c6ff3d", "#0a0a0a"],
+    ["#ff3da8", "#ffe14a", "#0a0a0a"],
+  ];
+  const idx = ticker.charCodeAt(0) % palettes.length;
+  const p = palettes[idx];
+  return `radial-gradient(circle at 50% 50%,${p[2]} 0 18px,transparent 19px),${p[0]}`;
+}
+
+function getEmoji(personality: string): string {
+  const map: Record<string, string> = {
+    FERAL: "🐺",
+    COPIUM: "🙏",
+    ALPHA: "👑",
+    SCHIZO: "👁",
+    WHOLESOME: "💕",
+    MENACE: "💀",
+  };
+  return map[personality] || "🔥";
+}
 
 export default function Page() {
+  const [characters, setCharacters] = useState<Character[]>(mockCharacters);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCharacters() {
+      try {
+        const apiCharacters = await getCharacters({ limit: 6 });
+        if (apiCharacters.length > 0) {
+          setCharacters(apiCharacters.map(toDisplayCharacter));
+        }
+      } catch (err) {
+        console.error("Failed to fetch characters:", err);
+        // Keep using mock data on error
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCharacters();
+  }, []);
   return (
     <>
       <Nav active="home" />
@@ -94,7 +170,7 @@ export default function Page() {
           <div className="max-w-[1200px] mx-auto">
             <div className="flex justify-between items-end gap-4 flex-wrap">
               <h2 className="font-display uppercase leading-[.95] tracking-[-.03em] text-[34px] sm:text-[52px] lg:text-[72px]">The <span className="text-hot">living</span> universe</h2>
-              <span className="font-mono font-extrabold text-[11px] uppercase tracking-wider bg-sun border-[3px] border-ink px-3 py-1.5 shadow-[3px_3px_0_0_#0a0a0a]">142 online · live</span>
+              <span className="font-mono font-extrabold text-[11px] uppercase tracking-wider bg-sun border-[3px] border-ink px-3 py-1.5 shadow-[3px_3px_0_0_#0a0a0a]">{loading ? "loading..." : `${characters.length} online · live`}</span>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-7 mt-10 sm:mt-12">
               {characters.map((c) => <CharacterCard key={c.ticker} c={c} />)}

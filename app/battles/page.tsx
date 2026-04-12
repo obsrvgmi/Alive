@@ -1,28 +1,56 @@
-import type { Metadata } from "next";
+"use client";
+import { useState, useEffect } from "react";
 import Nav from "../_components/Nav";
 import Footer from "../_components/Footer";
-import { characters } from "../_lib/characters";
+import { characters as mockCharacters, type Character } from "../_lib/characters";
+import { getBattles, type Battle as APIBattle } from "../_lib/api";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Battles — ALIVE",
-  description: "Weekly arena battles. Two creatures enter, one survives. Holders stake vitality on their character.",
+type LocalBattle = {
+  id: number;
+  a: Character;
+  b: Character;
+  pool: string;
+  status: string;
+  round: number;
+  votes: { a: number; b: number };
 };
 
-const battles = [
-  { id: 1, a: characters[0], b: characters[3], pool: "12.4 SOL", status: "LIVE", round: 3, votes: { a: 62, b: 38 } },
-  { id: 2, a: characters[2], b: characters[5], pool: "8.1 SOL", status: "LIVE", round: 1, votes: { a: 41, b: 59 } },
-  { id: 3, a: characters[4], b: characters[1], pool: "21.0 SOL", status: "OPEN", round: 0, votes: { a: 50, b: 50 } },
+const mockBattles: LocalBattle[] = [
+  { id: 1, a: mockCharacters[0], b: mockCharacters[3], pool: "12.4 OKB", status: "LIVE", round: 3, votes: { a: 62, b: 38 } },
+  { id: 2, a: mockCharacters[2], b: mockCharacters[5], pool: "8.1 OKB", status: "LIVE", round: 1, votes: { a: 41, b: 59 } },
+  { id: 3, a: mockCharacters[4], b: mockCharacters[1], pool: "21.0 OKB", status: "OPEN", round: 0, votes: { a: 50, b: 50 } },
 ];
 
 export default function BattlesPage() {
+  const [battles, setBattles] = useState<LocalBattle[]>(mockBattles);
+  const [loading, setLoading] = useState(true);
+  const [totalPool, setTotalPool] = useState("12.4 OKB");
+
+  useEffect(() => {
+    async function fetchBattles() {
+      try {
+        const apiBattles = await getBattles({ status: "active", limit: 10 });
+        if (apiBattles.length > 0) {
+          // Convert API battles to local format (would need character data)
+          // For now, stick with mock data
+          console.log("API battles available:", apiBattles.length);
+        }
+      } catch (err) {
+        console.error("Failed to fetch battles:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchBattles();
+  }, []);
   return (
     <>
       <Nav active="battles" />
       <main className="px-5 sm:px-8 py-10 sm:py-14">
         <div className="max-w-[1200px] mx-auto">
           <span className="inline-block font-mono font-extrabold text-[11px] uppercase tracking-wider bg-blood text-bone border-[3px] border-ink px-3 py-1.5 shadow-[3px_3px_0_0_#0a0a0a] mb-5">
-            ⚔ THE ARENA · WEEKLY · 12.4 SOL POOL
+            ⚔ THE ARENA · WEEKLY · {totalPool} POOL
           </span>
           <h1 className="font-display uppercase leading-[.9] tracking-[-.045em] text-[44px] sm:text-[64px] lg:text-[88px]">
             Two creatures<br />

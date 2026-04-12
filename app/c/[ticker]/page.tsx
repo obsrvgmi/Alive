@@ -1,26 +1,65 @@
-import { notFound } from "next/navigation";
+"use client";
+import { useState, useEffect } from "react";
+import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
-import type { Metadata } from "next";
 import Nav from "../../_components/Nav";
 import Footer from "../../_components/Footer";
 import Stat from "../../_components/Stat";
-import { findCharacter, characters, formatMarketCap } from "../../_lib/characters";
-import { characterJsonLd } from "../../_lib/jsonld";
-import { BASE_URL } from "../../_lib/constants";
+import { getCharacter, getCharacterFeed, type Character as APICharacter } from "../../_lib/api";
+import { findCharacter, characters as mockCharacters, formatMarketCap, type Character } from "../../_lib/characters";
 
-export function generateStaticParams() {
-  return characters.map((c) => ({ ticker: c.ticker }));
+// Convert API character to display format
+function toDisplayCharacter(c: APICharacter): Character {
+  const vit = Math.round(c.vitality / 100);
+  return {
+    name: c.name,
+    ticker: c.ticker,
+    age: getAge(c.createdAt),
+    vit,
+    crit: vit < 15,
+    q: `"${c.bio?.slice(0, 60) || 'no bio yet'}..."`,
+    chips: [],
+    ava: getAvatarGradient(c.ticker),
+    emoji: getEmoji(c.personality),
+    hp: c.vitality,
+    holders: c.holders || 0,
+    mood: c.mood || c.personality,
+    mc: parseFloat(c.marketCap || "0"),
+    bio: c.bio || "",
+    handle: `@${c.ticker.toLowerCase()}_alive`,
+  };
 }
 
-export async function generateMetadata({ params }: { params: { ticker: string } }): Promise<Metadata> {
-  const c = findCharacter(params.ticker);
-  if (!c) return {};
-  return {
-    title: `${c.name} ($${c.ticker}) — ALIVE`,
-    description: c.bio,
-    openGraph: { title: `${c.name} ($${c.ticker})`, description: c.bio, type: "website" },
-    alternates: { canonical: `${BASE_URL}/c/${c.ticker}` },
+function getAge(createdAt: string): string {
+  const diff = Date.now() - new Date(createdAt).getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  if (days > 0) return `${days}d ${hours.toString().padStart(2, '0')}h`;
+  return `${hours}h`;
+}
+
+function getAvatarGradient(ticker: string): string {
+  const palettes = [
+    ["#c6ff3d", "#ff3da8", "#0a0a0a"],
+    ["#ffe14a", "#0a0a0a", "#ff4127"],
+    ["#3d6bff", "#c6ff3d", "#0a0a0a"],
+    ["#ff3da8", "#ffe14a", "#0a0a0a"],
+  ];
+  const idx = ticker.charCodeAt(0) % palettes.length;
+  const p = palettes[idx];
+  return `radial-gradient(circle at 50% 50%,${p[2]} 0 18px,transparent 19px),${p[0]}`;
+}
+
+function getEmoji(personality: string): string {
+  const map: Record<string, string> = {
+    FERAL: "🐺",
+    COPIUM: "🙏",
+    ALPHA: "👑",
+    SCHIZO: "👁",
+    WHOLESOME: "💕",
+    MENACE: "💀",
   };
+  return map[personality] || "🔥";
 }
 
 // Deterministic engagement numbers from ticker (avoids Math.random() hydration mismatch)
@@ -29,30 +68,118 @@ function seed(ticker: string, i: number, factor: number): number {
   return ((base * factor + 31) % 997);
 }
 
-export default function CharacterPage({ params }: { params: { ticker: string } }) {
-  const c = findCharacter(params.ticker);
-  if (!c) notFound();
+type Tweet = {
+  time: string;
+  text: string;
+};
 
-  // Deterministic fake token address
-  const tokenAddr = `ALV${c.ticker}${c.holders.toString(36).toUpperCase()}${c.hp.toString(36).toUpperCase()}`;
+export default function CharacterPage() {
+  const params = useParams();
+  const ticker = params.ticker as string;
 
-  const tweets = [
+  const [character, setCharacter] = useState<Character | null>(null);
+  const [tweets, setTweets] = useState<Tweet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchCharacter() {
+      try {
+        setLoading(true);
+        const apiCharacter = await getCharacter(ticker);
+        setCharacter(toDisplayCharacter(apiCharacter));
+
+        // Try to fetch tweets
+        try {
+          const feedData = await getCharacterFeed(ticker);
+          if (feedData.tweets?.length > 0) {
+            setTweets(feedData.tweets.map(t => ({
+              time: getAge(t.createdAt),
+              text: `"${t.content}"`,
+            })));
+          }
+        } catch {
+          // Use mock tweets if feed not available
+        }
+      } catch (err) {
+        console.error("Failed to fetch character:", err);
+        // Fall back to mock data
+        const mockChar = findCharacter(ticker);
+        if (mockChar) {
+          setCharacter(mockChar);
+          setError("Using demo data - backend not connected");
+        } else {
+          setError("Character not found");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (ticker) {
+      fetchCharacter();
+    }
+  }, [ticker]);
+
+  // Default tweets if none from API
+  const displayTweets = tweets.length > 0 ? tweets : [
     { time: "4m", text: '"if u sell rn i will literally appear in ur dreams. this is not a threat. this is a feature."' },
-    { time: "1h", text: `"@${c.handle.slice(1)} update: still alive. still funnier than your portfolio."` },
+    { time: "1h", text: `"still alive. still funnier than your portfolio."` },
     { time: "3h", text: '"holders dropped me 4 hp today. i\'m noting names."' },
     { time: "8h", text: '"every time someone sells i write a worse joke. this is on purpose."' },
   ];
 
+  if (loading) {
+    return (
+      <>
+        <Nav />
+        <main className="px-5 sm:px-8 py-10 sm:py-14">
+          <div className="max-w-[1200px] mx-auto">
+            <div className="border-[3px] border-ink p-10 text-center font-mono text-[12px] font-extrabold uppercase opacity-75 bg-bone shadow-[6px_6px_0_0_#0a0a0a] animate-pulse">
+              Loading character...
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!character) {
+    return (
+      <>
+        <Nav />
+        <main className="px-5 sm:px-8 py-10 sm:py-14">
+          <div className="max-w-[1200px] mx-auto">
+            <Link href="/characters" className="font-mono font-bold text-[11px] uppercase opacity-70 hover:opacity-100 transition">← all creatures</Link>
+            <div className="mt-8 border-[3px] border-ink p-10 text-center font-mono text-[12px] font-extrabold uppercase opacity-75 bg-bone shadow-[6px_6px_0_0_#0a0a0a]">
+              Character not found: ${ticker}
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  const c = character;
+
+  // Deterministic fake token address
+  const tokenAddr = `0x${c.ticker}${c.holders.toString(16).toUpperCase().padStart(8, '0')}${c.hp.toString(16).toUpperCase().padStart(8, '0')}`;
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(characterJsonLd(c)) }}
-      />
       <Nav />
       <main className="px-5 sm:px-8 py-10 sm:py-14">
         <div className="max-w-[1200px] mx-auto">
-          <Link href="/characters" className="font-mono font-bold text-[11px] uppercase opacity-70 hover:opacity-100 transition">← all creatures</Link>
+          <div className="flex items-center gap-2">
+            <Link href="/characters" className="font-mono font-bold text-[11px] uppercase opacity-70 hover:opacity-100 transition">← all creatures</Link>
+            {error && (
+              <span className="font-mono text-[10px] uppercase bg-hot text-bone px-2 py-1">
+                {error}
+              </span>
+            )}
+          </div>
 
           <div className="mt-4 grid lg:grid-cols-[auto_1fr] gap-6 sm:gap-10 items-start">
             <div
@@ -114,7 +241,7 @@ export default function CharacterPage({ params }: { params: { ticker: string } }
             <div>
               <h2 className="font-display text-[28px] sm:text-[32px] uppercase tracking-[-.02em] mb-4">Recent posts</h2>
               <div className="space-y-3">
-                {tweets.map((t, i) => (
+                {displayTweets.map((t, i) => (
                   <div key={i} className="card p-4">
                     <div className="font-mono text-[10px] font-extrabold uppercase opacity-70 mb-1.5">{c.handle} · {t.time}</div>
                     <p className="text-[14px] font-semibold leading-snug">{t.text}</p>
