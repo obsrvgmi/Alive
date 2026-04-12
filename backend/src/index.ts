@@ -1,3 +1,4 @@
+import http from "http";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -73,12 +74,38 @@ console.log(`🧬 ALIVE API starting on port ${port}`);
 console.log(`Environment: NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}`);
 
 try {
-  serve({
-    fetch: app.fetch,
-    port,
-    hostname: "0.0.0.0",
-  }, (info) => {
-    console.log(`✅ Server running at http://${info.address}:${info.port}`);
+  // Use native Node.js http server directly for better Railway compatibility
+  const server = http.createServer(async (req, res) => {
+    console.log(`📥 Request: ${req.method} ${req.url}`);
+
+    // Convert Node request to Fetch API Request
+    const url = new URL(req.url || "/", `http://${req.headers.host}`);
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (value) headers.set(key, Array.isArray(value) ? value[0] : value);
+    }
+
+    const fetchRequest = new Request(url.toString(), {
+      method: req.method,
+      headers,
+      body: req.method !== "GET" && req.method !== "HEAD" ? req : undefined,
+    });
+
+    try {
+      const response = await app.fetch(fetchRequest);
+      res.statusCode = response.status;
+      response.headers.forEach((value, key) => res.setHeader(key, value));
+      const body = await response.text();
+      res.end(body);
+    } catch (err) {
+      console.error("Request error:", err);
+      res.statusCode = 500;
+      res.end(JSON.stringify({ error: "Internal Server Error" }));
+    }
+  });
+
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`✅ Server running at http://0.0.0.0:${port}`);
   });
 
   // Keep the process alive and log heartbeat
