@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
+import { serve } from "@hono/node-server";
 
 import { authRoutes } from "./routes/auth";
 import { characterRoutes } from "./routes/characters";
@@ -72,16 +73,13 @@ console.log(`🧬 ALIVE API starting on port ${port}`);
 console.log(`Environment: NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}`);
 
 try {
-  const server = Bun.serve({
+  serve({
+    fetch: app.fetch,
     port,
     hostname: "0.0.0.0",
-    fetch: (req) => {
-      console.log(`📥 Request: ${req.method} ${req.url}`);
-      return app.fetch(req);
-    },
+  }, (info) => {
+    console.log(`✅ Server running at http://${info.address}:${info.port}`);
   });
-
-  console.log(`✅ Server running at http://${server.hostname}:${server.port}`);
 
   // Keep the process alive and log heartbeat
   setInterval(() => {
