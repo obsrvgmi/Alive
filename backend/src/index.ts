@@ -75,7 +75,10 @@ try {
   const server = Bun.serve({
     port,
     hostname: "0.0.0.0",
-    fetch: app.fetch,
+    fetch: (req) => {
+      console.log(`📥 Request: ${req.method} ${req.url}`);
+      return app.fetch(req);
+    },
   });
 
   console.log(`✅ Server running at http://${server.hostname}:${server.port}`);
