@@ -69,11 +69,22 @@ app.notFound((c) => {
 const port = parseInt(process.env.PORT || "3001");
 
 console.log(`🧬 ALIVE API starting on port ${port}`);
+console.log(`Environment: NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}`);
 
-const server = Bun.serve({
-  port,
-  hostname: "0.0.0.0",
-  fetch: app.fetch,
-});
+try {
+  const server = Bun.serve({
+    port,
+    hostname: "0.0.0.0",
+    fetch: app.fetch,
+  });
 
-console.log(`Started server: http://${server.hostname}:${server.port}`);
+  console.log(`✅ Server running at http://${server.hostname}:${server.port}`);
+
+  // Keep the process alive and log heartbeat
+  setInterval(() => {
+    console.log(`💓 Heartbeat - server still running on port ${port}`);
+  }, 30000);
+} catch (error) {
+  console.error("❌ Failed to start server:", error);
+  process.exit(1);
+}
