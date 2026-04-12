@@ -2,11 +2,19 @@
  * API client for ALIVE backend
  */
 
-// Use Railway backend URL in production, localhost for development
-const API_URL = process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? 'https://backend-production-0e38.up.railway.app'
-    : 'http://localhost:3001');
+// Get API URL dynamically (handles SSR vs client-side)
+function getApiUrl(): string {
+  // Check env var first
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  // Client-side: detect production by hostname
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    return 'https://backend-production-0e38.up.railway.app';
+  }
+  // Default for local development
+  return 'http://localhost:3001';
+}
 
 type FetchOptions = RequestInit & {
   params?: Record<string, string | number>;
@@ -15,7 +23,7 @@ type FetchOptions = RequestInit & {
 async function fetcher<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { params, ...init } = options;
 
-  let url = `${API_URL}${endpoint}`;
+  let url = `${getApiUrl()}${endpoint}`;
   if (params) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
