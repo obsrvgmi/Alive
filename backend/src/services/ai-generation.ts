@@ -1,8 +1,18 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy-load OpenAI client to avoid crash if API key is missing
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) {
+    console.log("⚠️ OPENAI_API_KEY not set, using fallback generation");
+    return null;
+  }
+  if (!openai) {
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openai;
+}
 
 type Personality = "FERAL" | "COPIUM" | "ALPHA" | "SCHIZO" | "WHOLESOME" | "MENACE";
 
@@ -57,8 +67,13 @@ Return a JSON array with 4 objects, each containing:
 
 Each candidate should be distinct but related to the brief.`;
 
+  const client = getOpenAIClient();
+  if (!client) {
+    return generateFallbackCandidates(brief, refineChips);
+  }
+
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
