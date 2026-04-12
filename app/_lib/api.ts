@@ -2,7 +2,11 @@
  * API client for ALIVE backend
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Use Railway backend URL in production, localhost for development
+const API_URL = process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://backend-production-0e38.up.railway.app'
+    : 'http://localhost:3001');
 
 type FetchOptions = RequestInit & {
   params?: Record<string, string | number>;
