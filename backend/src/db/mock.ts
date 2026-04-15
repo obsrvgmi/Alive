@@ -25,6 +25,12 @@ export type Character = {
   avatarUrl?: string;
   graduated: boolean;
   critical: boolean;
+  // Agentic Wallet fields
+  agenticWalletId?: string;
+  agenticWalletAddress?: string;
+  treasuryBalanceOkb?: string;
+  walletEnabled: boolean;
+  lastWalletSync?: Date;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -88,6 +94,32 @@ export type User = {
   lastLogin?: Date;
 };
 
+export type CharacterTransaction = {
+  id: string;
+  characterId: string;
+  type: string;
+  amount: string;
+  tokenAddress?: string;
+  txHash?: string;
+  counterparty?: string;
+  counterpartyCharacterId?: string;
+  status: string;
+  metadata?: any;
+  createdAt: Date;
+};
+
+export type Relationship = {
+  id: string;
+  characterA: string;
+  characterB: string;
+  type: "BEEF" | "NEUTRAL" | "ALLIANCE";
+  sentiment: number;
+  reason?: string;
+  lastInteraction?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 // In-memory storage
 class MockStore<T extends { id: string }> {
   private data: Map<string, T> = new Map();
@@ -144,6 +176,8 @@ const battleStore = new MockStore<Battle>();
 const stakeStore = new MockStore<BattleStake>();
 const tweetStore = new MockStore<Tweet>();
 const userStore = new MockStore<User>();
+const transactionStore = new MockStore<CharacterTransaction>();
+const relationshipStore = new MockStore<Relationship>();
 
 // No seed data - start with empty database
 // Data will be created through API calls
@@ -183,54 +217,102 @@ export const mockDb = {
       findFirst: (opts?: { where?: (u: User) => boolean }) =>
         userStore.findFirst(opts?.where || (() => true)),
     },
+    characterTransactions: {
+      findFirst: (opts?: { where?: (t: CharacterTransaction) => boolean }) =>
+        transactionStore.findFirst(opts?.where || (() => true)),
+      findMany: (opts?: { where?: (t: CharacterTransaction) => boolean; orderBy?: any; limit?: number }) =>
+        transactionStore.findMany(opts?.where, { limit: opts?.limit, orderBy: "desc" }),
+    },
+    relationships: {
+      findFirst: (opts?: { where?: (r: Relationship) => boolean }) =>
+        relationshipStore.findFirst(opts?.where || (() => true)),
+      findMany: (opts?: { where?: (r: Relationship) => boolean; limit?: number }) =>
+        relationshipStore.findMany(opts?.where, { limit: opts?.limit }),
+    },
   },
 
   insert: (table: any) => ({
-    values: (data: any) => ({
-      returning: () => {
-        // Get table name from Drizzle symbol or string
-        const drizzleNameSymbol = Symbol.for("drizzle:Name");
-        const tableName = table?.[drizzleNameSymbol] || (typeof table === "string" ? table : null);
+    values: (data: any) => {
+      // Get table name from Drizzle - try multiple methods
+      const drizzleNameSymbol = Symbol.for("drizzle:Name");
+      let tableName = table?.[drizzleNameSymbol]
+        || table?._?.name
+        || table?._.name
+        || (typeof table === "string" ? table : null);
 
-        if (tableName === "characters") {
-          return [characterStore.insert({
-            ...data,
-            vitality: data.vitality || 5000,
-            hp: data.hp || 5000,
-            holders: data.holders || 0,
-            marketCap: data.marketCap || "0",
-            mood: data.mood || "FERAL",
-            graduated: false,
-            critical: false,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          })];
-        }
-        if (tableName === "battles") {
-          return [battleStore.insert({ ...data, status: data.status || "OPEN", roundsCompleted: 0, poolA: "0", poolB: "0", createdAt: new Date(), updatedAt: new Date() })];
-        }
-        if (tableName === "battle_stakes") {
-          return [stakeStore.insert({ ...data, claimed: false, createdAt: new Date() })];
-        }
-        if (tableName === "tweet_queue") {
-          return [tweetStore.insert({ ...data, status: data.status || "PENDING", createdAt: new Date() })];
-        }
-        if (tableName === "vitality_snapshots") {
-          return [vitalityStore.insert({ ...data, createdAt: new Date() })];
-        }
-        if (tableName === "users") {
-          return [userStore.insert({ ...data, createdAt: new Date() })];
-        }
-        console.log("Unknown table for insert:", tableName, table);
-        return [];
-      },
-    }),
+      // Fallback: check the table config for name
+      if (!tableName && table?._) {
+        const config = table._;
+        tableName = config.name || config.tableName;
+      }
+
+      // Insert logging (disabled in production)
+      // console.log(`[MockDB] INSERT into table: ${tableName || 'UNKNOWN'}`);
+
+      // Perform the insert immediately
+      let result: any[] = [];
+
+      if (tableName === "characters") {
+        result = [characterStore.insert({
+          ...data,
+          vitality: data.vitality || 5000,
+          hp: data.hp || 5000,
+          holders: data.holders || 0,
+          marketCap: data.marketCap || "0",
+          mood: data.mood || "FERAL",
+          graduated: false,
+          critical: false,
+          walletEnabled: data.walletEnabled || false,
+          treasuryBalanceOkb: data.treasuryBalanceOkb || "0",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })];
+      } else if (tableName === "battles") {
+        result = [battleStore.insert({ ...data, status: data.status || "OPEN", roundsCompleted: 0, poolA: "0", poolB: "0", createdAt: new Date(), updatedAt: new Date() })];
+      } else if (tableName === "battle_stakes") {
+        result = [stakeStore.insert({ ...data, claimed: false, createdAt: new Date() })];
+      } else if (tableName === "tweet_queue") {
+        result = [tweetStore.insert({ ...data, status: data.status || "PENDING", createdAt: new Date() })];
+      } else if (tableName === "vitality_snapshots") {
+        result = [vitalityStore.insert({ ...data, createdAt: new Date() })];
+      } else if (tableName === "users") {
+        result = [userStore.insert({ ...data, createdAt: new Date() })];
+      } else if (tableName === "character_transactions") {
+        result = [transactionStore.insert({ ...data, status: data.status || "pending", createdAt: new Date() })];
+      } else if (tableName === "relationships") {
+        result = [relationshipStore.insert({ ...data, sentiment: data.sentiment || 0, type: data.type || "NEUTRAL", createdAt: new Date(), updatedAt: new Date() })];
+      } else {
+        console.log("Unknown table for insert. tableName:", tableName);
+      }
+
+      // Return a thenable object that also has returning() method
+      return {
+        returning: () => result,
+        then: (resolve: (val: any) => void) => resolve(result),
+      };
+    },
   }),
 
   update: (table: any) => ({
     set: (data: any) => ({
       where: (condition: any) => {
-        // Simple update - finds first matching and updates
+        // Get table name from Drizzle symbol or string
+        const drizzleNameSymbol = Symbol.for("drizzle:Name");
+        const tableName = table?.[drizzleNameSymbol] || (typeof table === "string" ? table : null);
+
+        // Find matching item and update
+        if (tableName === "characters") {
+          const items = characterStore.findMany(condition);
+          items.forEach(item => {
+            characterStore.update(item.id, { ...data, updatedAt: new Date() });
+          });
+        }
+        if (tableName === "battles") {
+          const items = battleStore.findMany(condition);
+          items.forEach(item => {
+            battleStore.update(item.id, { ...data, updatedAt: new Date() });
+          });
+        }
         return Promise.resolve();
       },
     }),
@@ -247,11 +329,46 @@ export const mockDb = {
 
 // Helper functions
 export const eq = (field: any, value: any) => (item: any) => {
+  // Try multiple ways to get the column name from Drizzle column object
+  let fieldName: string;
+  if (typeof field === "string") {
+    fieldName = field;
+  } else {
+    // Drizzle column objects can have different structures
+    fieldName = field.name
+      || field._.name
+      || field._.config?.name
+      || field.config?.name
+      || (typeof field.columnType === "string" ? field.mapFromDriverValue?.name : null)
+      || "unknown";
+
+    // Convert camelCase to snake_case field might be stored differently
+    // Try both the direct fieldName and camelCase version
+  }
+
+  // Handle both camelCase (JS) and snake_case (DB) field names
+  const camelFieldName = fieldName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+
+  // Debug (disabled in production)
+  // console.log(`[MockDB] eq: fieldName=${fieldName}, camelFieldName=${camelFieldName}, value=${value}`);
+
+  return item[fieldName] === value || item[camelFieldName] === value;
+};
+
+export const ne = (field: any, value: any) => (item: any) => {
   const fieldName = typeof field === "string" ? field : field.name;
-  return item[fieldName] === value;
+  return item[fieldName] !== value;
+};
+
+export const and = (...conditions: Array<(item: any) => boolean>) => (item: any) => {
+  return conditions.every((cond) => cond(item));
+};
+
+export const or = (...conditions: Array<(item: any) => boolean>) => (item: any) => {
+  return conditions.some((cond) => cond(item));
 };
 
 export const desc = (field: any) => "desc" as const;
 
 // Export for compatibility
-export { characters, battles, battleStakes, tweetQueue, vitalitySnapshots, users } from "./schema";
+export { characters, battles, battleStakes, tweetQueue, vitalitySnapshots, users, characterTransactions, relationships } from "./schema";

@@ -80,9 +80,42 @@ export const characters = pgTable("characters", {
   graduated: boolean("graduated").notNull().default(false),
   critical: boolean("critical").notNull().default(false),
 
+  // Agentic Wallet (OKX Onchain OS)
+  agenticWalletId: text("agentic_wallet_id"),
+  agenticWalletAddress: text("agentic_wallet_address"),
+  treasuryBalanceOkb: decimal("treasury_balance_okb", { precision: 30, scale: 18 }).default("0"),
+  walletEnabled: boolean("wallet_enabled").notNull().default(false),
+  lastWalletSync: timestamp("last_wallet_sync"),
+
   // Timestamps
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Transaction type enum
+export const transactionTypeEnum = pgEnum("transaction_type", [
+  "earn_fee",      // Earned from trading fees
+  "tip_ally",      // Tipped an ally character
+  "buy_token",     // Bought a token via DEX
+  "battle_stake",  // Staked on a battle
+  "pay_action",    // Paid for an action (tweet, etc)
+  "receive_tip",   // Received a tip from another character
+  "battle_win",    // Won battle winnings
+]);
+
+// Character transactions (economy loop)
+export const characterTransactions = pgTable("character_transactions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  characterId: uuid("character_id").references(() => characters.id).notNull(),
+  type: transactionTypeEnum("type").notNull(),
+  amount: decimal("amount", { precision: 30, scale: 18 }).notNull(),
+  tokenAddress: text("token_address"),
+  txHash: text("tx_hash"),
+  counterparty: text("counterparty"), // Other wallet/character involved
+  counterpartyCharacterId: uuid("counterparty_character_id").references(() => characters.id),
+  status: text("status").notNull().default("pending"), // pending, confirmed, failed
+  metadata: jsonb("metadata"), // Additional context
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Vitality snapshots for time-series
@@ -177,6 +210,18 @@ export const characterRelations = relations(characters, ({ many }) => ({
   tweets: many(tweetQueue),
   battlesAsA: many(battles, { relationName: "characterA" }),
   battlesAsB: many(battles, { relationName: "characterB" }),
+  transactions: many(characterTransactions),
+}));
+
+export const characterTransactionRelations = relations(characterTransactions, ({ one }) => ({
+  character: one(characters, {
+    fields: [characterTransactions.characterId],
+    references: [characters.id],
+  }),
+  counterpartyChar: one(characters, {
+    fields: [characterTransactions.counterpartyCharacterId],
+    references: [characters.id],
+  }),
 }));
 
 export const battleRelations = relations(battles, ({ one, many }) => ({

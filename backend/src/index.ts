@@ -11,6 +11,7 @@ import { userRoutes } from "./routes/user";
 import { metadataRoutes } from "./routes/metadata";
 import { tweetRoutes } from "./routes/tweets";
 import { agentRoutes } from "./routes/agent";
+import { walletRoutes } from "./routes/wallet";
 
 const app = new Hono();
 
@@ -50,6 +51,7 @@ app.route("/api/user", userRoutes);
 app.route("/api/metadata", metadataRoutes);
 app.route("/api/tweets", tweetRoutes);
 app.route("/api/agent", agentRoutes);
+app.route("/api/wallet", walletRoutes);
 
 // Error handling
 app.onError((err, c) => {

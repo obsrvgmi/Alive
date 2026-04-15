@@ -2,9 +2,12 @@
 import { useState, useEffect } from "react";
 import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
+import { type Address } from "viem";
 import Nav from "../../_components/Nav";
 import Footer from "../../_components/Footer";
 import Stat from "../../_components/Stat";
+import TradePanel from "../../_components/TradePanel";
+import BattleStakePanel from "../../_components/BattleStakePanel";
 import { getCharacter, getCharacterFeed, type Character as APICharacter } from "../../_lib/api";
 import { findCharacter, characters as mockCharacters, formatMarketCap, type Character } from "../../_lib/characters";
 
@@ -78,9 +81,13 @@ export default function CharacterPage() {
   const ticker = params.ticker as string;
 
   const [character, setCharacter] = useState<Character | null>(null);
+  const [tokenAddress, setTokenAddress] = useState<Address | null>(null);
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showTradePanel, setShowTradePanel] = useState(false);
+  const [tradeMode, setTradeMode] = useState<"buy" | "sell">("buy");
+  const [showArenaModal, setShowArenaModal] = useState(false);
 
   useEffect(() => {
     async function fetchCharacter() {
@@ -88,6 +95,9 @@ export default function CharacterPage() {
         setLoading(true);
         const apiCharacter = await getCharacter(ticker);
         setCharacter(toDisplayCharacter(apiCharacter));
+        if (apiCharacter.tokenAddress) {
+          setTokenAddress(apiCharacter.tokenAddress as Address);
+        }
 
         // Try to fetch tweets
         try {
@@ -228,9 +238,27 @@ export default function CharacterPage() {
               </div>
 
               <div className="flex flex-wrap gap-3 mt-6">
-                <button className="btn-brut !bg-acid" aria-label={`Buy $${c.ticker} tokens`}>↑ Buy ${c.ticker}</button>
-                <button className="btn-brut" aria-label={`Sell $${c.ticker} tokens`}>↓ Sell</button>
-                <button className="btn-brut !bg-hot" aria-label={`Send ${c.name} to the battle arena`}>⚔ Send to arena</button>
+                <button
+                  className="btn-brut !bg-acid"
+                  aria-label={`Buy $${c.ticker} tokens`}
+                  onClick={() => { setTradeMode("buy"); setShowTradePanel(true); }}
+                >
+                  ↑ Buy ${c.ticker}
+                </button>
+                <button
+                  className="btn-brut"
+                  aria-label={`Sell $${c.ticker} tokens`}
+                  onClick={() => { setTradeMode("sell"); setShowTradePanel(true); }}
+                >
+                  ↓ Sell
+                </button>
+                <button
+                  className="btn-brut !bg-hot"
+                  aria-label={`Send ${c.name} to the battle arena`}
+                  onClick={() => setShowArenaModal(true)}
+                >
+                  ⚔ Send to arena
+                </button>
               </div>
 
               <div className="flex gap-1.5 mt-4 flex-wrap">
@@ -279,6 +307,87 @@ export default function CharacterPage() {
           </div>
         </div>
       </main>
+
+      {/* Trade Panel Modal */}
+      {showTradePanel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/80" onClick={() => setShowTradePanel(false)}>
+          <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-display text-[24px] text-bone uppercase">Trade ${c.ticker}</h3>
+              <button
+                onClick={() => setShowTradePanel(false)}
+                className="text-bone text-[24px] hover:text-hot transition"
+              >
+                ×
+              </button>
+            </div>
+            {tokenAddress ? (
+              <TradePanel tokenAddress={tokenAddress} ticker={c.ticker} />
+            ) : (
+              <div className="border-[3px] border-ink shadow-[6px_6px_0_0_#0a0a0a] bg-bone p-6 text-center">
+                <div className="font-mono text-[12px] font-extrabold uppercase text-blood">
+                  ⚠ Contracts not deployed
+                </div>
+                <p className="text-[14px] mt-2 opacity-70">
+                  Trading will be available once smart contracts are deployed to X Layer.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Arena Challenge Modal */}
+      {showArenaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/80" onClick={() => setShowArenaModal(false)}>
+          <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="border-[3px] border-ink shadow-[6px_6px_0_0_#0a0a0a] bg-bone">
+              <div className="p-4 border-b-[3px] border-ink bg-hot">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-display text-[24px] text-bone uppercase">⚔ Battle Arena</h3>
+                  <button
+                    onClick={() => setShowArenaModal(false)}
+                    className="text-bone text-[24px] hover:opacity-70 transition"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+              <div className="p-6">
+                <p className="font-display text-[18px] mb-4">
+                  Send <span className="text-hot">{c.name}</span> to challenge another character!
+                </p>
+                <div className="space-y-3">
+                  <div className="font-mono text-[10px] font-extrabold uppercase opacity-60">
+                    Select opponent
+                  </div>
+                  <select className="w-full p-3 border-[3px] border-ink font-mono text-[14px] bg-bone">
+                    <option value="">Choose a character...</option>
+                    <option value="demo1">$PEPE - Pepe the Frog</option>
+                    <option value="demo2">$DOGE - Doge Lord</option>
+                    <option value="demo3">$WOJAK - Wojak Prime</option>
+                  </select>
+                  <div className="font-mono text-[10px] font-extrabold uppercase opacity-60 mt-4">
+                    Stake amount (OKB)
+                  </div>
+                  <input
+                    type="number"
+                    placeholder="0.1"
+                    className="w-full p-3 border-[3px] border-ink font-mono text-[14px] bg-bone"
+                  />
+                  <button className="w-full mt-4 py-4 font-display text-[18px] uppercase tracking-tight border-[3px] border-ink shadow-[4px_4px_0_0_#0a0a0a] bg-hot text-bone hover:bg-blood transition">
+                    ⚔ Challenge to Battle
+                  </button>
+                  <div className="font-mono text-[9px] font-extrabold uppercase opacity-50 text-center mt-2">
+                    5 rounds · winner takes pool · 5% platform fee
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </>
   );

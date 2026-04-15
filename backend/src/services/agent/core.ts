@@ -7,12 +7,21 @@ import { db, characters, tweetQueue } from "../../db";
 import { computeMood, getTweetFrequency, type Mood } from "./mood";
 import { generateTweet, type TweetContext, type Character } from "./personality";
 import { postTweet, isMockMode } from "./twitter";
+import { walletService } from "../wallet";
+import {
+  decideWalletActions,
+  executeWalletAction,
+  getCharacterAllies,
+  getCharacterEnemies,
+  getActiveBattles,
+} from "./wallet-actions";
 
 interface AgentState {
   running: boolean;
   intervalId: NodeJS.Timeout | null;
   lastRun: Date | null;
   tweetsGenerated: number;
+  walletActionsExecuted: number;
   errors: number;
 }
 
@@ -21,6 +30,7 @@ const state: AgentState = {
   intervalId: null,
   lastRun: null,
   tweetsGenerated: 0,
+  walletActionsExecuted: 0,
   errors: 0,
 };
 
@@ -73,8 +83,10 @@ export function stopAgent(): void {
 export function getAgentStatus(): {
   running: boolean;
   mockMode: boolean;
+  walletMockMode: boolean;
   lastRun: Date | null;
   tweetsGenerated: number;
+  walletActionsExecuted: number;
   errors: number;
   characterCount: number;
 } {
@@ -83,8 +95,10 @@ export function getAgentStatus(): {
   return {
     running: state.running,
     mockMode: isMockMode(),
+    walletMockMode: walletService.isMockMode(),
     lastRun: state.lastRun,
     tweetsGenerated: state.tweetsGenerated,
+    walletActionsExecuted: state.walletActionsExecuted,
     errors: state.errors,
     characterCount: allCharacters.length,
   };
@@ -187,9 +201,19 @@ async function processCharacter(char: any): Promise<void> {
       state.tweetsGenerated++;
 
       console.log(`[Agent] ${char.ticker} tweeted: "${content.slice(0, 50)}..."`);
+
+      // Pay for tweet action (economy loop)
+      if (char.walletEnabled && char.agenticWalletAddress) {
+        await walletService.payForAction(char.id, "tweet");
+      }
     } else {
       console.error(`[Agent] ${char.ticker} tweet failed: ${result.error}`);
       state.errors++;
+    }
+
+    // Process wallet actions if enabled (economy loop)
+    if (char.walletEnabled && char.agenticWalletAddress) {
+      await processWalletActions(char, mood);
     }
   } catch (error) {
     console.error(`[Agent] Error processing ${char.ticker}:`, error);
@@ -279,6 +303,56 @@ function determineTrigger(
   }
 
   return null;
+}
+
+/**
+ * Process wallet actions for a character (economy loop)
+ * Runs after tweet processing if wallet is enabled
+ */
+async function processWalletActions(char: any, mood: Mood): Promise<void> {
+  try {
+    // 1. Sync balance from chain
+    const status = await walletService.getStatus(char.id);
+    if (!status.address) return;
+
+    console.log(`[Agent] ${char.ticker} treasury: ${status.balance.okb} OKB`);
+
+    // 2. Get social context
+    const [allies, enemies, activeBattles] = await Promise.all([
+      getCharacterAllies(char.id),
+      getCharacterEnemies(char.id),
+      getActiveBattles(),
+    ]);
+
+    // 3. Decide actions based on personality + mood
+    const actions = decideWalletActions(
+      {
+        id: char.id,
+        ticker: char.ticker,
+        personality: char.personality,
+        treasuryBalanceOkb: status.balance.okb,
+      },
+      mood,
+      status.balance,
+      allies,
+      enemies,
+      activeBattles
+    );
+
+    // 4. Execute actions
+    for (const action of actions) {
+      const result = await executeWalletAction(char.id, action);
+      if (result.success) {
+        state.walletActionsExecuted++;
+        console.log(`[Agent] ${char.ticker} executed ${action.type}: ${action.reason}`);
+      } else {
+        console.log(`[Agent] ${char.ticker} action failed: ${result.error}`);
+      }
+    }
+  } catch (error) {
+    console.error(`[Agent] Wallet error for ${char.ticker}:`, error);
+    // Don't increment errors - wallet is non-critical
+  }
 }
 
 /**

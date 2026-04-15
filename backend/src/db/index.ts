@@ -1,5 +1,5 @@
 import * as schema from "./schema";
-import { mockDb, eq, desc } from "./mock";
+import { mockDb, eq, ne, and, or, desc } from "./mock";
 
 // Use mock database for local development (no PostgreSQL needed)
 // In production, set DATABASE_URL to use real PostgreSQL
@@ -20,5 +20,5 @@ if (useMockDb) {
   console.log("🐘 Connected to PostgreSQL");
 }
 
-export { db, eq, desc };
+export { db, eq, ne, and, or, desc };
 export * from "./schema";
