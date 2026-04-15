@@ -17,13 +17,13 @@ import { useState, useEffect, useMemo } from 'react';
 
 import { getContractAddresses, BONDING_CURVE, CONTRACT_ADDRESSES } from './config';
 
-// X Layer Testnet config for direct RPC calls (when wallet not connected)
-const XLAYER_TESTNET_RPC = 'https://testrpc.xlayer.tech';
-const XLAYER_TESTNET_CHAIN_ID = 195;
+// X Layer Sepolia config for direct RPC calls (contracts deployed on chain 1952)
+const XLAYER_SEPOLIA_RPC = 'https://xlayertestrpc.okx.com';
+const XLAYER_SEPOLIA_CHAIN_ID = 1952;
 
-// Get addresses for testnet (fallback when wallet not connected)
-function getTestnetAddresses() {
-  return CONTRACT_ADDRESSES[195];
+// Get addresses for X Layer Sepolia (fallback when wallet not connected)
+function getSepoliaAddresses() {
+  return CONTRACT_ADDRESSES[1952];
 }
 import {
   AliveTokenFactoryABI,
@@ -48,7 +48,7 @@ export function useLaunch() {
   const { address } = useAccount();
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { writeContract, data: hash, isPending, error } = useWriteContract();
@@ -100,9 +100,9 @@ export function useTokenPrice(tokenAddress: Address | undefined) {
   // Try to use wagmi hook first (when wallet is on right chain)
   const addresses = useMemo(() => {
     try {
-      return getContractAddresses(chainId || XLAYER_TESTNET_CHAIN_ID);
+      return getContractAddresses(chainId || XLAYER_SEPOLIA_CHAIN_ID);
     } catch {
-      return getTestnetAddresses(); // Fallback to testnet
+      return getSepoliaAddresses(); // Fallback to testnet
     }
   }, [chainId]);
 
@@ -121,10 +121,10 @@ export function useTokenPrice(tokenAddress: Address | undefined) {
     if (!tokenAddress || data !== undefined) return;
 
     setDirectLoading(true);
-    const testnetAddresses = getTestnetAddresses();
+    const testnetAddresses = getSepoliaAddresses();
 
     const client = createPublicClient({
-      transport: http(XLAYER_TESTNET_RPC),
+      transport: http(XLAYER_SEPOLIA_RPC),
     });
 
     client.readContract({
@@ -191,9 +191,9 @@ export function useGetTokensOut(tokenAddress: Address | undefined, okbAmount: st
 
   const addresses = useMemo(() => {
     try {
-      return getContractAddresses(chainId || XLAYER_TESTNET_CHAIN_ID);
+      return getContractAddresses(chainId || XLAYER_SEPOLIA_CHAIN_ID);
     } catch {
-      return getTestnetAddresses();
+      return getSepoliaAddresses();
     }
   }, [chainId]);
 
@@ -220,10 +220,10 @@ export function useGetTokensOut(tokenAddress: Address | undefined, okbAmount: st
     if (!tokenAddress || okbWei <= 0n || data !== undefined) return;
 
     setDirectLoading(true);
-    const testnetAddresses = getTestnetAddresses();
+    const testnetAddresses = getSepoliaAddresses();
 
     const client = createPublicClient({
-      transport: http(XLAYER_TESTNET_RPC),
+      transport: http(XLAYER_SEPOLIA_RPC),
     });
 
     client.readContract({
@@ -260,9 +260,9 @@ export function useGetOkbOut(tokenAddress: Address | undefined, tokenAmount: str
 
   const addresses = useMemo(() => {
     try {
-      return getContractAddresses(chainId || XLAYER_TESTNET_CHAIN_ID);
+      return getContractAddresses(chainId || XLAYER_SEPOLIA_CHAIN_ID);
     } catch {
-      return getTestnetAddresses();
+      return getSepoliaAddresses();
     }
   }, [chainId]);
 
@@ -289,10 +289,10 @@ export function useGetOkbOut(tokenAddress: Address | undefined, tokenAmount: str
     if (!tokenAddress || tokensWei <= 0n || data !== undefined) return;
 
     setDirectLoading(true);
-    const testnetAddresses = getTestnetAddresses();
+    const testnetAddresses = getSepoliaAddresses();
 
     const client = createPublicClient({
-      transport: http(XLAYER_TESTNET_RPC),
+      transport: http(XLAYER_SEPOLIA_RPC),
     });
 
     client.readContract({
@@ -326,7 +326,7 @@ export function useBuy(tokenAddress: Address | undefined) {
   const chainId = useChainId();
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
@@ -360,7 +360,7 @@ export function useBuy(tokenAddress: Address | undefined) {
 export function useSell(tokenAddress: Address | undefined) {
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
@@ -395,7 +395,7 @@ export function useSell(tokenAddress: Address | undefined) {
 export function useCharacter(tokenAddress: Address | undefined) {
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { data, isLoading, error, refetch } = useReadContract({
@@ -419,7 +419,7 @@ export function useCharacter(tokenAddress: Address | undefined) {
 export function useVitality(tokenAddress: Address | undefined) {
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { data, isLoading, refetch } = useReadContract({
@@ -449,7 +449,7 @@ export function useVitality(tokenAddress: Address | undefined) {
 export function useBattle(battleId: bigint | undefined) {
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { data, isLoading, refetch } = useReadContract({
@@ -473,7 +473,7 @@ export function useBattle(battleId: bigint | undefined) {
 export function useStakeBattle() {
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
@@ -507,7 +507,7 @@ export function useStakeBattle() {
 export function useClaimWinnings() {
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
@@ -561,7 +561,7 @@ export function useTokenBalance(tokenAddress: Address | undefined) {
 export function useApproveToken(tokenAddress: Address | undefined) {
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
@@ -593,7 +593,7 @@ export function useAllowance(tokenAddress: Address | undefined) {
   const { address } = useAccount();
   // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    return getTestnetAddresses();
+    return getSepoliaAddresses();
   }, []);
 
   const { data, isLoading, refetch } = useReadContract({

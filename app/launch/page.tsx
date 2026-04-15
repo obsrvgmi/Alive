@@ -287,23 +287,15 @@ export default function LaunchPage() {
       // Step 2: Prepare launch parameters
       setProgress({ step: 1, label: "preparing transaction" });
 
+      // Build fee recipients - replace "you (creator)" placeholder with actual wallet
       const feeRecipients: Address[] = splits
-        .filter(s => s.wallet !== "you (creator)" && s.pct > 0)
-        .map(s => s.wallet as Address);
+        .filter(s => s.pct > 0)
+        .map(s => s.wallet === "you (creator)" ? wallet.address as Address : s.wallet as Address);
 
-      // If no custom recipients, use creator wallet
-      if (feeRecipients.length === 0) {
-        feeRecipients.push(wallet.address as Address);
-      }
-
+      // Build fee splits in basis points (pct * 100)
       const feeSplits = splits
-        .filter(s => s.wallet !== "you (creator)" && s.pct > 0)
-        .map(s => BigInt(s.pct * 100)); // Convert to basis points
-
-      // If no custom splits, 100% to creator
-      if (feeSplits.length === 0) {
-        feeSplits.push(10000n); // 100% in basis points
-      }
+        .filter(s => s.pct > 0)
+        .map(s => BigInt(s.pct * 100));
 
       const launchParams: LaunchParams = {
         name: chosen.name,

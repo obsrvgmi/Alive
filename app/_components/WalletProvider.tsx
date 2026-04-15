@@ -51,9 +51,10 @@ export function useWallet() {
 function WalletContextWrapper({ children }: { children: React.ReactNode }) {
   const [modalOpen, setModalOpen] = useState(false);
   const { address, isConnected, isConnecting, chainId } = useAccount();
+  // Force X Layer Sepolia chainId (1952) for balance - contracts are deployed there
   const { data: balanceData } = useBalance({
     address,
-    chainId: chainId,
+    chainId: 1952,
   });
   const { disconnect: wagmiDisconnect } = useDisconnect();
 

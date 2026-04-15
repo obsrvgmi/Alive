@@ -65,7 +65,7 @@ export default function BattlesPage() {
         if (apiBattles.length > 0 && apiCharacters.length > 0) {
           const charMap = new Map(apiCharacters.map(c => [c.ticker, toDisplayCharacter(c)]));
           const localBattles: LocalBattle[] = apiBattles
-            .filter(b => charMap.has(b.characterA.ticker) && charMap.has(b.characterB.ticker))
+            .filter(b => b.characterA && b.characterB && charMap.has(b.characterA.ticker) && charMap.has(b.characterB.ticker))
             .map(b => ({
               id: b.id,
               a: charMap.get(b.characterA.ticker)!,

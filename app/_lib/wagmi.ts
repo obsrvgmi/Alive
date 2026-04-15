@@ -24,7 +24,7 @@ export const xLayer = defineChain({
   },
 });
 
-// X Layer Testnet
+// X Layer Testnet (standard)
 export const xLayerTestnet = defineChain({
   id: 195,
   name: "X Layer Testnet",
@@ -36,6 +36,29 @@ export const xLayerTestnet = defineChain({
   rpcUrls: {
     default: {
       http: ["https://testrpc.xlayer.tech"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "OKX Explorer",
+      url: "https://www.okx.com/explorer/xlayer-test",
+    },
+  },
+  testnet: true,
+});
+
+// X Layer Sepolia (contracts deployed here - chain 1952)
+export const xLayerSepolia = defineChain({
+  id: 1952,
+  name: "X Layer Sepolia",
+  nativeCurrency: {
+    name: "OKB",
+    symbol: "OKB",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://xlayertestrpc.okx.com"],
     },
   },
   blockExplorers: {
@@ -74,8 +97,8 @@ const isDev = process.env.NODE_ENV === "development";
 export const config = getDefaultConfig({
   appName: "ALIVE",
   projectId: projectId || "00000000000000000000000000000000", // Dummy ID for dev
-  // TESTNET FIRST - contracts are deployed on testnet (195)
-  chains: isDev ? [xLayerTestnet, anvil, xLayer] : [xLayerTestnet, xLayer],
+  // X Layer Sepolia (1952) first - contracts are deployed there
+  chains: isDev ? [xLayerSepolia, xLayerTestnet, anvil, xLayer] : [xLayerSepolia, xLayerTestnet, xLayer],
   ssr: true,
 });
 

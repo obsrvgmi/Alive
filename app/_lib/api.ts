@@ -132,8 +132,8 @@ export async function getVitalityHistory(ticker: string): Promise<{
 
 export type Battle = {
   id: string;
-  characterA: { name: string; ticker: string; tokenAddress: string };
-  characterB: { name: string; ticker: string; tokenAddress: string };
+  characterA: { name: string; ticker: string; tokenAddress: string } | null;
+  characterB: { name: string; ticker: string; tokenAddress: string } | null;
   poolA: string;
   poolB: string;
   currentRound: number;
