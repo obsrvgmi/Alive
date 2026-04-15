@@ -65,19 +65,16 @@ function getEmoji(personality: string): string {
 }
 
 export default function Page() {
-  const [characters, setCharacters] = useState<Character[]>(mockCharacters);
+  const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchCharacters() {
       try {
         const apiCharacters = await getCharacters({ limit: 6 });
-        if (apiCharacters.length > 0) {
-          setCharacters(apiCharacters.map(toDisplayCharacter));
-        }
+        setCharacters(apiCharacters.map(toDisplayCharacter));
       } catch (err) {
         console.error("Failed to fetch characters:", err);
-        // Keep using mock data on error
       } finally {
         setLoading(false);
       }
@@ -94,9 +91,9 @@ export default function Page() {
         <section className="border-b-[3px] border-ink px-5 sm:px-8 pt-12 sm:pt-20 pb-16 sm:pb-24">
           <div className="max-w-[1200px] mx-auto grid lg:grid-cols-[1.4fr_1fr] gap-12 lg:gap-16 items-center">
             <div>
-              <span className="inline-flex items-center gap-2 font-mono font-extrabold text-[11px] uppercase tracking-wider bg-sun border-[3px] border-ink px-3 py-1.5 shadow-[3px_3px_0_0_#0a0a0a] mb-6">
+              <span className="inline-flex items-center gap-2 font-mono font-extrabold text-[11px] uppercase tracking-wider bg-acid border-[3px] border-ink px-3 py-1.5 shadow-[3px_3px_0_0_#0a0a0a] mb-6">
                 <span className="w-1.5 h-1.5 bg-ink rounded-full animate-blink" />
-                Living memecoin launchpad — mainnet soon
+                Living memecoin launchpad — X Layer Testnet Live
               </span>
               <h1 className="font-display uppercase leading-[.9] tracking-[-.045em] text-[44px] xs:text-[56px] sm:text-[80px] lg:text-[108px]">
                 Memes that<br />

@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import Nav from "../_components/Nav";
 import Footer from "../_components/Footer";
-import { characters as mockCharacters, type Character } from "../_lib/characters";
-import { getBattles, type Battle as APIBattle } from "../_lib/api";
+import { type Character } from "../_lib/characters";
+import { getBattles, getCharacters, type Battle as APIBattle, type Character as APICharacter } from "../_lib/api";
 import Link from "next/link";
 
 type LocalBattle = {
@@ -16,25 +16,69 @@ type LocalBattle = {
   votes: { a: number; b: number };
 };
 
-const mockBattles: LocalBattle[] = [
-  { id: 1, a: mockCharacters[0], b: mockCharacters[3], pool: "12.4 OKB", status: "LIVE", round: 3, votes: { a: 62, b: 38 } },
-  { id: 2, a: mockCharacters[2], b: mockCharacters[5], pool: "8.1 OKB", status: "LIVE", round: 1, votes: { a: 41, b: 59 } },
-  { id: 3, a: mockCharacters[4], b: mockCharacters[1], pool: "21.0 OKB", status: "OPEN", round: 0, votes: { a: 50, b: 50 } },
-];
+// Convert API character to display format
+function toDisplayCharacter(c: APICharacter): Character {
+  const vit = Math.round(c.vitality / 100);
+  const palettes = [
+    ["#c6ff3d", "#ff3da8", "#0a0a0a"],
+    ["#ffe14a", "#0a0a0a", "#ff4127"],
+    ["#3d6bff", "#c6ff3d", "#0a0a0a"],
+    ["#ff3da8", "#ffe14a", "#0a0a0a"],
+  ];
+  const idx = c.ticker.charCodeAt(0) % palettes.length;
+  const p = palettes[idx];
+  const emojiMap: Record<string, string> = {
+    FERAL: "🐺", COPIUM: "🙏", ALPHA: "👑", SCHIZO: "👁", WHOLESOME: "💕", MENACE: "💀",
+  };
+  return {
+    name: c.name,
+    ticker: c.ticker,
+    age: "0d",
+    vit,
+    crit: vit < 15,
+    q: `"${c.bio?.slice(0, 60) || 'no bio yet'}..."`,
+    chips: [],
+    ava: `radial-gradient(circle at 50% 50%,${p[2]} 0 18px,transparent 19px),${p[0]}`,
+    emoji: emojiMap[c.personality] || "🔥",
+    hp: c.vitality,
+    holders: c.holders || 0,
+    mood: c.mood || c.personality,
+    mc: parseFloat(c.marketCap || "0"),
+    bio: c.bio || "",
+    handle: `@${c.ticker.toLowerCase()}_alive`,
+  };
+}
 
 export default function BattlesPage() {
-  const [battles, setBattles] = useState<LocalBattle[]>(mockBattles);
+  const [battles, setBattles] = useState<LocalBattle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalPool, setTotalPool] = useState("12.4 OKB");
+  const [totalPool, setTotalPool] = useState("0 OKB");
 
   useEffect(() => {
     async function fetchBattles() {
       try {
-        const apiBattles = await getBattles({ status: "active", limit: 10 });
-        if (apiBattles.length > 0) {
-          // Convert API battles to local format (would need character data)
-          // For now, stick with mock data
-          console.log("API battles available:", apiBattles.length);
+        const [apiBattles, apiCharacters] = await Promise.all([
+          getBattles({ status: "active", limit: 10 }),
+          getCharacters({ limit: 50 }),
+        ]);
+
+        if (apiBattles.length > 0 && apiCharacters.length > 0) {
+          const charMap = new Map(apiCharacters.map(c => [c.ticker, toDisplayCharacter(c)]));
+          const localBattles: LocalBattle[] = apiBattles
+            .filter(b => charMap.has(b.challengerTicker) && charMap.has(b.defenderTicker))
+            .map(b => ({
+              id: parseInt(b.id),
+              a: charMap.get(b.challengerTicker)!,
+              b: charMap.get(b.defenderTicker)!,
+              pool: `${parseFloat(b.totalStake || "0").toFixed(1)} OKB`,
+              status: b.status === "ACTIVE" ? "LIVE" : b.status,
+              round: b.currentRound || 0,
+              votes: { a: 50, b: 50 },
+            }));
+          setBattles(localBattles);
+
+          const total = localBattles.reduce((sum, b) => sum + parseFloat(b.pool), 0);
+          setTotalPool(`${total.toFixed(1)} OKB`);
         }
       } catch (err) {
         console.error("Failed to fetch battles:", err);
@@ -61,6 +105,18 @@ export default function BattlesPage() {
           </p>
 
           <div className="mt-10 space-y-6">
+            {loading ? (
+              <div className="border-[3px] border-ink p-10 text-center font-mono text-[12px] font-extrabold uppercase opacity-75 bg-bone shadow-[6px_6px_0_0_#0a0a0a] animate-pulse">
+                Loading battles...
+              </div>
+            ) : battles.length === 0 ? (
+              <div className="border-[3px] border-ink p-10 text-center bg-bone shadow-[6px_6px_0_0_#0a0a0a]">
+                <div className="font-display text-[28px] uppercase mb-2">No active battles</div>
+                <p className="font-mono text-[12px] font-extrabold uppercase opacity-75">
+                  Be the first to challenge a character to battle!
+                </p>
+              </div>
+            ) : null}
             {battles.map((b) => {
               const totalVotes = b.votes.a + b.votes.b;
               const aPct = (b.votes.a / totalVotes) * 100;

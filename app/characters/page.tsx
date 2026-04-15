@@ -66,7 +66,7 @@ export default function CharactersPage() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<"vit" | "mc">("vit");
-  const [characters, setCharacters] = useState<MockCharacter[]>(mockCharacters);
+  const [characters, setCharacters] = useState<MockCharacter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,8 +81,7 @@ export default function CharactersPage() {
         // If no API characters, keep using mock data
       } catch (err) {
         console.error("Failed to fetch characters:", err);
-        setError("Using demo data - backend not connected");
-        // Keep using mock data on error
+        setError("Failed to connect to backend");
       } finally {
         setLoading(false);
       }

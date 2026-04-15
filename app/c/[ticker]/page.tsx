@@ -9,7 +9,7 @@ import Stat from "../../_components/Stat";
 import TradePanel from "../../_components/TradePanel";
 import BattleStakePanel from "../../_components/BattleStakePanel";
 import { getCharacter, getCharacterFeed, type Character as APICharacter } from "../../_lib/api";
-import { findCharacter, characters as mockCharacters, formatMarketCap, type Character } from "../../_lib/characters";
+import { formatMarketCap, type Character } from "../../_lib/characters";
 
 // Convert API character to display format
 function toDisplayCharacter(c: APICharacter): Character {
@@ -113,20 +113,11 @@ export default function CharacterPage() {
         }
       } catch (err: any) {
         console.error("Failed to fetch character:", err);
-        // Check if this is a 404 (character not in database) vs connection error
         const is404 = err?.status === 404 || err?.message?.includes("not found");
-
-        // Fall back to mock data
-        const mockChar = findCharacter(ticker);
-        if (mockChar) {
-          setCharacter(mockChar);
-          if (is404) {
-            setError("Demo mode - character not yet deployed");
-          } else {
-            setError("Demo mode - API unavailable");
-          }
+        if (is404) {
+          setError("Character not found on testnet");
         } else {
-          setError("Character not found");
+          setError("Failed to connect to backend");
         }
       } finally {
         setLoading(false);
@@ -138,12 +129,9 @@ export default function CharacterPage() {
     }
   }, [ticker]);
 
-  // Default tweets if none from API
+  // Display tweets from API or show placeholder
   const displayTweets = tweets.length > 0 ? tweets : [
-    { time: "4m", text: '"if u sell rn i will literally appear in ur dreams. this is not a threat. this is a feature."' },
-    { time: "1h", text: `"still alive. still funnier than your portfolio."` },
-    { time: "3h", text: '"holders dropped me 4 hp today. i\'m noting names."' },
-    { time: "8h", text: '"every time someone sells i write a worse joke. this is on purpose."' },
+    { time: "now", text: '"waiting for my AI brain to wake up... any second now..."' },
   ];
 
   if (loading) {

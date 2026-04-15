@@ -42,7 +42,7 @@ export default function Nav({ active }: { active?: string }) {
           {wallet ? (
             <div className="flex items-center gap-1.5">
               <span className="font-mono font-bold text-[11px] uppercase px-3 py-2 border-[3px] border-ink bg-acid shadow-[3px_3px_0_0_#0a0a0a]">
-                <span className="font-mono text-[9px] bg-ink text-bone px-1 py-0.5 mr-1.5">DEMO</span>
+                <span className="font-mono text-[9px] bg-ink text-acid px-1 py-0.5 mr-1.5">TESTNET</span>
                 {wallet.balance.toFixed(2)} OKB · {short(wallet.address)}
               </span>
               <button
