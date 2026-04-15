@@ -12,10 +12,19 @@ import {
   useBalance,
   useChainId,
 } from 'wagmi';
-import { parseEther, formatEther, type Address } from 'viem';
+import { parseEther, formatEther, type Address, createPublicClient, http } from 'viem';
 import { useState, useEffect, useMemo } from 'react';
 
-import { getContractAddresses, BONDING_CURVE } from './config';
+import { getContractAddresses, BONDING_CURVE, CONTRACT_ADDRESSES } from './config';
+
+// X Layer Testnet config for direct RPC calls (when wallet not connected)
+const XLAYER_TESTNET_RPC = 'https://testrpc.xlayer.tech';
+const XLAYER_TESTNET_CHAIN_ID = 195;
+
+// Get addresses for testnet (fallback when wallet not connected)
+function getTestnetAddresses() {
+  return CONTRACT_ADDRESSES[195];
+}
 import {
   AliveTokenFactoryABI,
   AliveBondingCurveABI,
@@ -89,11 +98,15 @@ export function useLaunch() {
 
 export function useTokenPrice(tokenAddress: Address | undefined) {
   const chainId = useChainId();
+  const [directPrice, setDirectPrice] = useState<bigint | null>(null);
+  const [directLoading, setDirectLoading] = useState(false);
+
+  // Try to use wagmi hook first (when wallet is on right chain)
   const addresses = useMemo(() => {
     try {
-      return getContractAddresses(chainId);
+      return getContractAddresses(chainId || XLAYER_TESTNET_CHAIN_ID);
     } catch {
-      return null;
+      return getTestnetAddresses(); // Fallback to testnet
     }
   }, [chainId]);
 
@@ -107,10 +120,38 @@ export function useTokenPrice(tokenAddress: Address | undefined) {
     },
   });
 
+  // Direct RPC fallback when wagmi hook doesn't work
+  useEffect(() => {
+    if (!tokenAddress || data !== undefined) return;
+
+    setDirectLoading(true);
+    const testnetAddresses = getTestnetAddresses();
+
+    const client = createPublicClient({
+      transport: http(XLAYER_TESTNET_RPC),
+    });
+
+    client.readContract({
+      address: testnetAddresses.bondingCurve,
+      abi: AliveBondingCurveABI,
+      functionName: 'getPrice',
+      args: [tokenAddress],
+    }).then((result) => {
+      setDirectPrice(result as bigint);
+    }).catch((err) => {
+      console.error('Direct price fetch failed:', err);
+    }).finally(() => {
+      setDirectLoading(false);
+    });
+  }, [tokenAddress, data]);
+
+  const finalPrice = data ?? directPrice;
+  const finalLoading = isLoading || directLoading;
+
   return {
-    price: data,
-    priceFormatted: data ? formatEther(data) : '0',
-    isLoading,
+    price: finalPrice,
+    priceFormatted: finalPrice ? parseFloat(formatEther(finalPrice)).toFixed(8) : '0',
+    isLoading: finalLoading && !finalPrice,
     error,
     refetch,
   };
@@ -146,11 +187,14 @@ export function useTokenReserve(tokenAddress: Address | undefined) {
 
 export function useGetTokensOut(tokenAddress: Address | undefined, okbAmount: string) {
   const chainId = useChainId();
+  const [directData, setDirectData] = useState<bigint | null>(null);
+  const [directLoading, setDirectLoading] = useState(false);
+
   const addresses = useMemo(() => {
     try {
-      return getContractAddresses(chainId);
+      return getContractAddresses(chainId || XLAYER_TESTNET_CHAIN_ID);
     } catch {
-      return null;
+      return getTestnetAddresses();
     }
   }, [chainId]);
 
@@ -172,20 +216,50 @@ export function useGetTokensOut(tokenAddress: Address | undefined, okbAmount: st
     },
   });
 
+  // Direct RPC fallback
+  useEffect(() => {
+    if (!tokenAddress || okbWei <= 0n || data !== undefined) return;
+
+    setDirectLoading(true);
+    const testnetAddresses = getTestnetAddresses();
+
+    const client = createPublicClient({
+      transport: http(XLAYER_TESTNET_RPC),
+    });
+
+    client.readContract({
+      address: testnetAddresses.bondingCurve,
+      abi: AliveBondingCurveABI,
+      functionName: 'getTokensOut',
+      args: [tokenAddress, okbWei],
+    }).then((result) => {
+      setDirectData(result as bigint);
+    }).catch((err) => {
+      console.error('Direct getTokensOut failed:', err);
+    }).finally(() => {
+      setDirectLoading(false);
+    });
+  }, [tokenAddress, okbWei, data]);
+
+  const finalData = data ?? directData;
+
   return {
-    tokensOut: data,
-    tokensOutFormatted: data ? formatEther(data) : '0',
-    isLoading,
+    tokensOut: finalData,
+    tokensOutFormatted: finalData ? parseFloat(formatEther(finalData)).toLocaleString() : '0',
+    isLoading: (isLoading || directLoading) && !finalData,
   };
 }
 
 export function useGetOkbOut(tokenAddress: Address | undefined, tokenAmount: string) {
   const chainId = useChainId();
+  const [directData, setDirectData] = useState<bigint | null>(null);
+  const [directLoading, setDirectLoading] = useState(false);
+
   const addresses = useMemo(() => {
     try {
-      return getContractAddresses(chainId);
+      return getContractAddresses(chainId || XLAYER_TESTNET_CHAIN_ID);
     } catch {
-      return null;
+      return getTestnetAddresses();
     }
   }, [chainId]);
 
@@ -207,10 +281,37 @@ export function useGetOkbOut(tokenAddress: Address | undefined, tokenAmount: str
     },
   });
 
+  // Direct RPC fallback
+  useEffect(() => {
+    if (!tokenAddress || tokensWei <= 0n || data !== undefined) return;
+
+    setDirectLoading(true);
+    const testnetAddresses = getTestnetAddresses();
+
+    const client = createPublicClient({
+      transport: http(XLAYER_TESTNET_RPC),
+    });
+
+    client.readContract({
+      address: testnetAddresses.bondingCurve,
+      abi: AliveBondingCurveABI,
+      functionName: 'getOkbOut',
+      args: [tokenAddress, tokensWei],
+    }).then((result) => {
+      setDirectData(result as bigint);
+    }).catch((err) => {
+      console.error('Direct getOkbOut failed:', err);
+    }).finally(() => {
+      setDirectLoading(false);
+    });
+  }, [tokenAddress, tokensWei, data]);
+
+  const finalData = data ?? directData;
+
   return {
-    okbOut: data,
-    okbOutFormatted: data ? formatEther(data) : '0',
-    isLoading,
+    okbOut: finalData,
+    okbOutFormatted: finalData ? parseFloat(formatEther(finalData)).toFixed(6) : '0',
+    isLoading: (isLoading || directLoading) && !finalData,
   };
 }
 
