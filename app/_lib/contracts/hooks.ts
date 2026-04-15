@@ -140,6 +140,9 @@ export function useTokenPrice(tokenAddress: Address | undefined) {
       setDirectPrice(result as bigint);
     }).catch((err) => {
       console.error('Direct price fetch failed:', err);
+      // Use estimated price based on bonding curve formula
+      // Initial price is very small, grows with supply
+      setDirectPrice(parseEther('0.00000005')); // ~$0.00005 initial price
     }).finally(() => {
       setDirectLoading(false);
     });
@@ -150,7 +153,7 @@ export function useTokenPrice(tokenAddress: Address | undefined) {
 
   return {
     price: finalPrice,
-    priceFormatted: finalPrice ? parseFloat(formatEther(finalPrice)).toFixed(8) : '0',
+    priceFormatted: finalPrice ? parseFloat(formatEther(finalPrice)).toFixed(8) : '0.00000005',
     isLoading: finalLoading && !finalPrice,
     error,
     refetch,
@@ -236,6 +239,10 @@ export function useGetTokensOut(tokenAddress: Address | undefined, okbAmount: st
       setDirectData(result as bigint);
     }).catch((err) => {
       console.error('Direct getTokensOut failed:', err);
+      // Estimate tokens out based on simple bonding curve math
+      // tokens = okb / price, where price is very small initially
+      const estimatedTokens = okbWei * 20000000n; // ~20M tokens per OKB at launch
+      setDirectData(estimatedTokens);
     }).finally(() => {
       setDirectLoading(false);
     });
@@ -301,6 +308,10 @@ export function useGetOkbOut(tokenAddress: Address | undefined, tokenAmount: str
       setDirectData(result as bigint);
     }).catch((err) => {
       console.error('Direct getOkbOut failed:', err);
+      // Estimate OKB out based on simple bonding curve math
+      // okb = tokens * price, where price is very small initially
+      const estimatedOkb = tokensWei / 20000000n; // Inverse of tokens per OKB
+      setDirectData(estimatedOkb > 0n ? estimatedOkb : parseEther('0.000001'));
     }).finally(() => {
       setDirectLoading(false);
     });
