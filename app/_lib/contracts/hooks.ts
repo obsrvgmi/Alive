@@ -45,15 +45,11 @@ export type LaunchParams = {
 };
 
 export function useLaunch() {
-  const chainId = useChainId();
   const { address } = useAccount();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -328,13 +324,10 @@ export function useGetOkbOut(tokenAddress: Address | undefined, tokenAmount: str
 
 export function useBuy(tokenAddress: Address | undefined) {
   const chainId = useChainId();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -365,14 +358,10 @@ export function useBuy(tokenAddress: Address | undefined) {
 }
 
 export function useSell(tokenAddress: Address | undefined) {
-  const chainId = useChainId();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -404,14 +393,10 @@ export function useSell(tokenAddress: Address | undefined) {
 // ============ Registry Hooks ============
 
 export function useCharacter(tokenAddress: Address | undefined) {
-  const chainId = useChainId();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { data, isLoading, error, refetch } = useReadContract({
     address: addresses?.registry,
@@ -432,14 +417,10 @@ export function useCharacter(tokenAddress: Address | undefined) {
 }
 
 export function useVitality(tokenAddress: Address | undefined) {
-  const chainId = useChainId();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { data, isLoading, refetch } = useReadContract({
     address: addresses?.registry,
@@ -466,14 +447,10 @@ export function useVitality(tokenAddress: Address | undefined) {
 // ============ Battle Hooks ============
 
 export function useBattle(battleId: bigint | undefined) {
-  const chainId = useChainId();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { data, isLoading, refetch } = useReadContract({
     address: addresses?.battleArena,
@@ -494,14 +471,10 @@ export function useBattle(battleId: bigint | undefined) {
 }
 
 export function useStakeBattle() {
-  const chainId = useChainId();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -532,14 +505,10 @@ export function useStakeBattle() {
 }
 
 export function useClaimWinnings() {
-  const chainId = useChainId();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -590,14 +559,10 @@ export function useTokenBalance(tokenAddress: Address | undefined) {
 }
 
 export function useApproveToken(tokenAddress: Address | undefined) {
-  const chainId = useChainId();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -626,14 +591,10 @@ export function useApproveToken(tokenAddress: Address | undefined) {
 
 export function useAllowance(tokenAddress: Address | undefined) {
   const { address } = useAccount();
-  const chainId = useChainId();
+  // ALWAYS use testnet for now - contracts only deployed there
   const addresses = useMemo(() => {
-    try {
-      return getContractAddresses(chainId);
-    } catch {
-      return null;
-    }
-  }, [chainId]);
+    return getTestnetAddresses();
+  }, []);
 
   const { data, isLoading, refetch } = useReadContract({
     address: tokenAddress,

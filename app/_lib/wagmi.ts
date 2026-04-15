@@ -74,7 +74,8 @@ const isDev = process.env.NODE_ENV === "development";
 export const config = getDefaultConfig({
   appName: "ALIVE",
   projectId: projectId || "00000000000000000000000000000000", // Dummy ID for dev
-  chains: isDev ? [anvil, xLayer, xLayerTestnet] : [xLayer, xLayerTestnet],
+  // TESTNET FIRST - contracts are deployed on testnet (195)
+  chains: isDev ? [xLayerTestnet, anvil, xLayer] : [xLayerTestnet, xLayer],
   ssr: true,
 });
 
