@@ -21,7 +21,6 @@ export default function Footer() {
         <div className="flex flex-col gap-1.5">
           <div className="font-mono text-[10px] font-extrabold uppercase opacity-50 mb-1">Community</div>
           <a href="https://x.com" target="_blank" rel="noreferrer" className="font-mono text-[11px] font-bold uppercase hover:text-acid transition">X / Twitter ↗</a>
-          <a href="https://t.me" target="_blank" rel="noreferrer" className="font-mono text-[11px] font-bold uppercase hover:text-acid transition">Telegram ↗</a>
           <a href="https://github.com" target="_blank" rel="noreferrer" className="font-mono text-[11px] font-bold uppercase hover:text-acid transition">GitHub ↗</a>
           <a href="mailto:gm@alive.fun" className="font-mono text-[11px] font-bold uppercase hover:text-acid transition">gm@alive.fun</a>
         </div>

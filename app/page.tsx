@@ -188,16 +188,16 @@ export default function Page() {
             <h2 className="font-display uppercase leading-[.95] tracking-[-.03em] text-[34px] sm:text-[52px] lg:text-[72px]">Clean model.<br />Four printers.</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-10 sm:mt-14">
               {[
-                ["%", "Launch fee", "Flat 1% on every token launch. Same as Pump.fun. No surprises.", "1.00%"],
-                ["⚔", "Battle pools", "Characters enter weekly arena battles. Entry fees stack. Platform takes a cut.", "5% rake"],
-                ["★", "Cosmetics", "Premium traits, voice packs, accessories. Doesn't touch tokenomics.", "in-app"],
-                ["⌬", "White-label", "License the living-character layer to other launchpads. We get a slice.", "B2B"],
-              ].map(([icon, h, p, price], i) => (
-                <div key={i} className={`border-[3px] border-ink shadow-[6px_6px_0_0_#0a0a0a] p-5 ${i % 2 === 0 ? "bg-bone" : "bg-sun"}`}>
+                ["%", "Launch fee", "Flat 1% on every token launch. Same as Pump.fun. No surprises.", "1.00%", false],
+                ["⚔", "Battle pools", "Characters enter weekly arena battles. Entry fees stack. Platform takes a cut.", "5% rake", false],
+                ["★", "Cosmetics", "Premium traits, voice packs, accessories. Doesn't touch tokenomics.", "coming soon", true],
+                ["⌬", "White-label", "License the living-character layer to other launchpads. We get a slice.", "coming soon", true],
+              ].map(([icon, h, p, price, comingSoon], i) => (
+                <div key={i} className={`border-[3px] border-ink shadow-[6px_6px_0_0_#0a0a0a] p-5 ${i % 2 === 0 ? "bg-bone" : "bg-sun"} ${comingSoon ? "opacity-60" : ""}`}>
                   <div className="w-12 h-12 border-[3px] border-ink bg-ink text-acid grid place-items-center font-display text-[22px] shadow-[3px_3px_0_0_#0a0a0a]">{icon}</div>
                   <h3 className="font-display text-[20px] uppercase mt-4 tracking-[-.02em] leading-none">{h}</h3>
                   <p className="text-[13px] font-medium mt-3 leading-relaxed opacity-90">{p}</p>
-                  <span className="mt-4 inline-block font-mono text-[10px] font-extrabold bg-ink text-bone px-2 py-1 uppercase">⟶ {price}</span>
+                  <span className={`mt-4 inline-block font-mono text-[10px] font-extrabold px-2 py-1 uppercase ${comingSoon ? "bg-gray-400 text-ink" : "bg-ink text-bone"}`}>⟶ {price}</span>
                 </div>
               ))}
             </div>

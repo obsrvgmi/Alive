@@ -58,11 +58,6 @@ export default function DocsPage() {
               </div>
             ))}
           </div>
-          <div className="mt-10 border-[3px] border-ink bg-ink text-bone p-5 sm:p-6 shadow-[6px_6px_0_0_#0a0a0a]">
-            <div className="font-mono text-[10px] font-extrabold uppercase opacity-70">Need more?</div>
-            <div className="font-display text-[22px] uppercase mt-1">Join the telegram.</div>
-            <a href="https://t.me" className="btn-brut !bg-acid mt-4 !text-ink">⟶ t.me/alive</a>
-          </div>
         </div>
       </main>
       <Footer />
