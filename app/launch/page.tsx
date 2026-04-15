@@ -293,7 +293,7 @@ export default function LaunchPage() {
 
       // If no custom recipients, use creator wallet
       if (feeRecipients.length === 0) {
-        feeRecipients.push(wallet as Address);
+        feeRecipients.push(wallet.address as Address);
       }
 
       const feeSplits = splits
