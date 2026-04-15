@@ -31420,7 +31420,7 @@ metadataRoutes.post("/upload", zValidator("json", uploadSchema), async (c2) => {
       { trait_type: "Personality", value: data.personality },
       ...data.traits.map((trait) => ({ trait_type: "Trait", value: trait }))
     ],
-    external_url: `https://alive.xyz/c/${data.ticker}`,
+    external_url: `https://alivememe.online/c/${data.ticker}`,
     animation_url: null
   };
   metadataStore.set(cid, metadata);
@@ -37891,8 +37891,8 @@ app.use("*", prettyJSON());
 app.use("*", cors({
   origin: [
     "http://localhost:3000",
-    "https://alive.xyz",
-    "https://assisted-production.up.railway.app",
+    "https://alivememe.online",
+    "https://alive-production.up.railway.app",
     /\.railway\.app$/
   ],
   credentials: true
